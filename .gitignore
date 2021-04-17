@@ -4,3 +4,4 @@ files
 recovered
 .DS_Store
 testdisk.log
+node_modules
