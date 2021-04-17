@@ -5,6 +5,8 @@ const chalk = require('chalk');
 const log = console.log;
 const INPUT_FILE = 'file_types.txt';
 
+const files = {}; // hash to store resulting files
+
 const genBanner = () => {
     const projectStr = `
                                                                     
@@ -41,11 +43,11 @@ const processLineByLine = async () => {
 
     for await (const line of rl) {
         // Each line in input.txt will be successively available here as `line`.
-        processCurLine(line);
+        processCurLine(line, files);
     }
 };
 
-const processCurLine = (curLine) => {
+const processCurLine = (curLine, hash) => {
     const [fileName, fileType] = curLine.split(/: /);
     let extension = null;
 
@@ -67,7 +69,7 @@ const processCurLine = (curLine) => {
         { re: /\.MOV\/QT/i, ext: 'mov', path: 'videos' },
         {
             re: /Composite Document File V2 Document/i,
-            ext: '',
+            ext: 'dat',
             path: 'composite_docs',
         },
         {
@@ -82,7 +84,7 @@ const processCurLine = (curLine) => {
             ext: 'plist',
             path: 'apple',
         },
-        { re: /iTunes cover art/i, ext: 'coverart', path: 'apple' },
+        { re: /iTunes cover art/i, ext: 'art', path: 'apple' },
         { re: /Apple DiskCopy 4.2 image dfm/i, ext: 'dsk', path: 'apple' },
         { re: /SQLite 3.x database/i, ext: 'db', path: 'apple' },
         { re: /tar archive/i, ext: 'tar', path: 'apple' },
@@ -92,6 +94,20 @@ const processCurLine = (curLine) => {
     for (const curr of typeMatches) {
         if (fileType.match(curr.re)) {
             extension = curr.ext;
+
+            if (!hash[extension]) {
+                // if hash not defined, add empty array
+                hash[extension] = [];
+            }
+            
+            // save to hash
+            hash[extension].push({
+                fileType,
+                extension,
+                fileName,
+                path: curr.path,
+            });
+
             break;
         }
     }
@@ -105,7 +121,24 @@ const processCurLine = (curLine) => {
     }
 };
 
+const init = async () => {
+    let totalCount = 0;
+    try {
+        await processLineByLine();
+        Object.keys(files).forEach(curKey => {
+
+            log(chalk.cyan(curKey) + ":\t" + chalk.blue(files[curKey].length));
+            totalCount += files[curKey].length;
+        });
+        
+        log("\n" + chalk.cyan('Total files: ') + chalk.blue(totalCount));
+    } catch (error) {
+        log(chalk.red('Encountered error: ') + chalk.blue(error.message));
+    }
+}
+
 log(genBanner());
 log(chalk.blue('Parsing file types ') + chalk.red('...'));
 
-processLineByLine();
+init();
+
