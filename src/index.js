@@ -5,8 +5,29 @@ const chalk = require('chalk');
 const log = console.log;
 const INPUT_FILE = 'file_types.txt';
 
-log(chalk.blue('Hello') + ' World' + chalk.red('!'));
-log(chalk.bgCyan.black(' Parsing file types... '));
+const genBanner = () => {
+    const projectStr = `
+                                                                    
+    _|_|_|                        _|                        _|      
+    _|    _|  _|  _|_|    _|_|          _|_|      _|_|_|  _|_|_|_|  
+    _|_|_|    _|_|      _|    _|  _|  _|_|_|_|  _|          _|      
+    _|        _|        _|    _|  _|  _|        _|          _|      
+    _|        _|          _|_|    _|    _|_|_|    _|_|_|      _|_|  
+                                  _|                                
+                                _|                                  `;
+    const mendTaylorStr = `
+                                                                                                        
+    _|      _|                            _|      _|_|_|_|_|                    _|                      
+    _|_|  _|_|    _|_|    _|_|_|      _|_|_|          _|      _|_|_|  _|    _|  _|    _|_|    _|  _|_|  
+    _|  _|  _|  _|_|_|_|  _|    _|  _|    _|          _|    _|    _|  _|    _|  _|  _|    _|  _|_|      
+    _|      _|  _|        _|    _|  _|    _|          _|    _|    _|  _|    _|  _|  _|    _|  _|        
+    _|      _|    _|_|_|  _|    _|    _|_|_|          _|      _|_|_|    _|_|_|  _|    _|_|    _|        
+                                                                            _|                          
+                                                                        _|_|                            `;
+
+    return chalk.bgCyan.black(projectStr) + "\n" + chalk.bgCyan.black(mendTaylorStr)
+}
+                                                            ;
 
 const processLineByLine = async () => {
     const fileStream = fs.createReadStream(INPUT_FILE);
@@ -83,5 +104,8 @@ const processCurLine = (curLine) => {
         );
     }
 };
+
+log(genBanner());
+log(chalk.blue('Parsing file types ') + chalk.red('...'));
 
 processLineByLine();
