@@ -1,4 +1,8 @@
-const fs = require('fs');
+const fs = require('fs-extra');
+const path = require('path');
+const DATA_EXT = '.CHK'; // extension of source files to rename
+const SOURCE_PATH = path.resolve('data');
+const DEST_PATH = path.resolve('files');
 const readline = require('readline');
 const chalk = require('chalk');
 
@@ -27,10 +31,12 @@ const genBanner = () => {
                                                                             _|                          
                                                                         _|_|                            `;
 
-    return chalk.bgCyan.black(projectStr) + "\n" + chalk.bgCyan.black(mendTaylorStr)
-}
-                                                            ;
-
+    return (
+        chalk.bgCyan.black(projectStr) +
+        '\n' +
+        chalk.bgCyan.black(mendTaylorStr)
+    );
+};
 const processLineByLine = async () => {
     const fileStream = fs.createReadStream(INPUT_FILE);
 
@@ -60,7 +66,7 @@ const processCurLine = (curLine, hash) => {
         { re: /Audio file with ID3/i, ext: 'mp3', path: 'audio' },
         { re: /M4A/i, ext: 'm4a', path: 'audio' },
         { re: /Microsoft PowerPoint/i, ext: 'pptx', path: 'power_point' },
-        { re: /^data$/i, ext: 'pptx', path: 'unknown' },
+        { re: /^data$/i, ext: 'dat', path: 'unknown' },
         //{ re: /InternetShortcut/i, ext: 'lnk', path: 'links' },
         { re: /Microsoft ASF/i, ext: 'wma', path: 'audio' },
         { re: /Windows desktop\.ini/i, ext: 'ini', path: 'ini' },
@@ -99,7 +105,7 @@ const processCurLine = (curLine, hash) => {
                 // if hash not defined, add empty array
                 hash[extension] = [];
             }
-            
+
             // save to hash
             hash[extension].push({
                 fileType,
@@ -121,24 +127,49 @@ const processCurLine = (curLine, hash) => {
     }
 };
 
+const copyFiles = (hash) => {
+    const keys = Object.keys(hash);
+    let curHash = null;
+    let srcFile = null;
+    let dstFile = null;
+    let newFilename = null;
+
+    log('\n' + chalk.cyan('Copying files ') + chalk.blue('...'));
+    for (curKey of keys) {
+        log('Handling extension: ' + chalk.cyan(curKey));
+        curHash = hash[curKey];
+
+        curHash.forEach(file => {
+            newFilename = file.fileName.replace(DATA_EXT, `.${file.extension}`);
+            srcFile = path.resolve(SOURCE_PATH, file.fileName);
+            dstFile = path.resolve(DEST_PATH, file.path, newFilename);
+            fs.ensureDirSync(path.resolve(DEST_PATH, file.path));
+            // log(chalk.cyanBright(srcFile) + ' ' + 
+            //     chalk.magentaBright.white.bold('=>') + ' ' +
+            //     chalk.cyanBright(dstFile));
+            fs.copyFileSync(srcFile, dstFile);
+        });
+    }
+};
+
 const init = async () => {
     let totalCount = 0;
     try {
         await processLineByLine();
-        Object.keys(files).forEach(curKey => {
-
-            log(chalk.cyan(curKey) + ":\t" + chalk.blue(files[curKey].length));
+        Object.keys(files).forEach((curKey) => {
+            log(chalk.cyan(curKey) + ':\t' + chalk.blue(files[curKey].length));
             totalCount += files[curKey].length;
         });
-        
-        log("\n" + chalk.cyan('Total files: ') + chalk.blue(totalCount));
+
+        log('\n' + chalk.cyan('Total files: ') + chalk.blue(totalCount));
+
+        copyFiles(files);
     } catch (error) {
         log(chalk.red('Encountered error: ') + chalk.blue(error.message));
     }
-}
+};
 
 log(genBanner());
 log(chalk.blue('Parsing file types ') + chalk.red('...'));
 
 init();
-
