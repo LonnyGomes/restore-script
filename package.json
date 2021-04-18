@@ -1,11 +1,15 @@
 {
-  "name": "recovery",
+  "name": "restore-script",
   "version": "1.0.0",
   "description": "restore files",
   "main": "src/index.js",
   "scripts": {
     "start": "node src/index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/LonnyGomes/restore-script.git"
   },
   "author": "",
   "license": "ISC",
