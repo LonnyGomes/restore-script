@@ -1,6 +1,6 @@
 FILE0000.CHK: data
 FILE0001.CHK: data
-FILE0002.CHK:u: PDF document, version 1.4
+FILE0002.CHK: PDF document, version 1.4
 FILE0003.CHK: PDF document, version 1.4
 FILE0004.CHK: PDF document, version 1.3
 FILE0005.CHK: data
