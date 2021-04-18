@@ -1,5 +1,5 @@
 {
-  "name": "recovery",
+  "name": "restore-script",
   "version": "1.0.0",
   "description": "restore files",
   "main": "src/index.js",
@@ -7,10 +7,15 @@
     "start": "node src/index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/LonnyGomes/restore-script.git"
+  },
   "author": "",
   "license": "ISC",
   "dependencies": {
     "chalk": "^4.1.0",
-    "fs-extra": "^9.1.0"
+    "fs-extra": "^9.1.0",
+    "terminal-kit": "^2.0.7"
   }
 }

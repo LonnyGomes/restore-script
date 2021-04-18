@@ -5,6 +5,7 @@ const SOURCE_PATH = path.resolve('data');
 const DEST_PATH = path.resolve('files');
 const readline = require('readline');
 const chalk = require('chalk');
+const term = require('terminal-kit').terminal;
 
 const log = console.log;
 const INPUT_FILE = 'file_types.txt';
@@ -13,28 +14,28 @@ const files = {}; // hash to store resulting files
 
 const genBanner = () => {
     const projectStr = `
-                                                                    
-    _|_|_|                        _|                        _|      
-    _|    _|  _|  _|_|    _|_|          _|_|      _|_|_|  _|_|_|_|  
-    _|_|_|    _|_|      _|    _|  _|  _|_|_|_|  _|          _|      
-    _|        _|        _|    _|  _|  _|        _|          _|      
-    _|        _|          _|_|    _|    _|_|_|    _|_|_|      _|_|  
-                                  _|                                
+
+    _|_|_|                        _|                        _|
+    _|    _|  _|  _|_|    _|_|          _|_|      _|_|_|  _|_|_|_|
+    _|_|_|    _|_|      _|    _|  _|  _|_|_|_|  _|          _|
+    _|        _|        _|    _|  _|  _|        _|          _|
+    _|        _|          _|_|    _|    _|_|_|    _|_|_|      _|_|
+                                  _|
                                 _|                                  `;
     const mendTaylorStr = `
-                                                                                                        
-    _|      _|                            _|      _|_|_|_|_|                    _|                      
-    _|_|  _|_|    _|_|    _|_|_|      _|_|_|          _|      _|_|_|  _|    _|  _|    _|_|    _|  _|_|  
-    _|  _|  _|  _|_|_|_|  _|    _|  _|    _|          _|    _|    _|  _|    _|  _|  _|    _|  _|_|      
-    _|      _|  _|        _|    _|  _|    _|          _|    _|    _|  _|    _|  _|  _|    _|  _|        
-    _|      _|    _|_|_|  _|    _|    _|_|_|          _|      _|_|_|    _|_|_|  _|    _|_|    _|        
-                                                                            _|                          
+
+    _|      _|                            _|      _|_|_|_|_|                    _|
+    _|_|  _|_|    _|_|    _|_|_|      _|_|_|          _|      _|_|_|  _|    _|  _|    _|_|    _|  _|_|
+    _|  _|  _|  _|_|_|_|  _|    _|  _|    _|          _|    _|    _|  _|    _|  _|  _|    _|  _|_|
+    _|      _|  _|        _|    _|  _|    _|          _|    _|    _|  _|    _|  _|  _|    _|  _|
+    _|      _|    _|_|_|  _|    _|    _|_|_|          _|      _|_|_|    _|_|_|  _|    _|_|    _|
+                                                                            _|
                                                                         _|_|                            `;
 
     return (
-        chalk.bgCyan.black(projectStr) +
+        chalk.bgCyan.blue(projectStr) +
         '\n' +
-        chalk.bgCyan.black(mendTaylorStr)
+        chalk.bgCyan.blue(mendTaylorStr)
     );
 };
 const processLineByLine = async () => {
@@ -67,7 +68,6 @@ const processCurLine = (curLine, hash) => {
         { re: /M4A/i, ext: 'm4a', path: 'audio' },
         { re: /Microsoft PowerPoint/i, ext: 'pptx', path: 'power_point' },
         { re: /^data$/i, ext: 'dat', path: 'unknown' },
-        //{ re: /InternetShortcut/i, ext: 'lnk', path: 'links' },
         { re: /Microsoft ASF/i, ext: 'wma', path: 'audio' },
         { re: /Windows desktop\.ini/i, ext: 'ini', path: 'ini' },
         { re: /Mobipocket/i, ext: 'mobi', path: 'ebooks' },
@@ -127,28 +127,60 @@ const processCurLine = (curLine, hash) => {
     }
 };
 
-const copyFiles = (hash) => {
+const copyFiles = async (hash, total) => {
     const keys = Object.keys(hash);
+
+    let curItemCount = 0;
     let curHash = null;
     let srcFile = null;
     let dstFile = null;
     let newFilename = null;
 
-    log('\n' + chalk.cyan('Copying files ') + chalk.blue('...'));
+    log('\n' + chalk.cyan('Copying files ') + chalk.blue('...') + '\n\n\n');
+
+    const { x, y } = await term.getCursorLocation();
+
+    const progressBar = term.progressBar({
+        width: Math.min(75, term.width - 5),
+        title: 'Mending progress:',
+        eta: false,
+        percent: true,
+        percentStyle: term.cyan,
+        barStyle: term.magenta,
+        x: 0,
+        y: y - 3
+    });
+
     for (curKey of keys) {
-        log('Handling extension: ' + chalk.cyan(curKey));
+        term.moveTo(1, y - 2);
+        term.eraseDisplayBelow();
+        term(chalk.cyan('Current extension') + ': ' + chalk.blue(curKey));
         curHash = hash[curKey];
 
-        curHash.forEach(file => {
+        for (file of curHash) {
+            curItemCount += 1;
+
+            progress = curItemCount / total;
+            progressBar.update(curItemCount / total);
+
             newFilename = file.fileName.replace(DATA_EXT, `.${file.extension}`);
             srcFile = path.resolve(SOURCE_PATH, file.fileName);
             dstFile = path.resolve(DEST_PATH, file.path, newFilename);
             fs.ensureDirSync(path.resolve(DEST_PATH, file.path));
-            // log(chalk.cyanBright(srcFile) + ' ' + 
-            //     chalk.magentaBright.white.bold('=>') + ' ' +
-            //     chalk.cyanBright(dstFile));
-            fs.copyFileSync(srcFile, dstFile);
-        });
+
+            term.moveTo.cyan(
+                1,
+                y - 1,
+                chalk.whiteBright('Copying ') +
+                    chalk.cyanBright(srcFile) +
+                    ' ' +
+                    chalk.magentaBright.bold('=>') +
+                    ' ' +
+                    chalk.cyanBright(dstFile)
+            );
+
+            await fs.copyFile(srcFile, dstFile);
+        };
     }
 };
 
@@ -161,15 +193,21 @@ const init = async () => {
             totalCount += files[curKey].length;
         });
 
-        log('\n' + chalk.cyan('Total files: ') + chalk.blue(totalCount));
+        log('\n' + chalk.cyan('Total files') + ': ' + chalk.blue(totalCount));
 
-        copyFiles(files);
+        await copyFiles(files, totalCount);
+
+        log(
+            '\n\n' +
+                chalk.cyan('Taylor successfully mended') +
+                chalk.blue('!\n')
+        );
     } catch (error) {
         log(chalk.red('Encountered error: ') + chalk.blue(error.message));
     }
 };
 
 log(genBanner());
-log(chalk.blue('Parsing file types ') + chalk.red('...'));
+log(chalk.blue('\nParsing file types ') + chalk.magentaBright('...'));
 
 init();
