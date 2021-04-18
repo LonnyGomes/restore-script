@@ -14,28 +14,28 @@ const files = {}; // hash to store resulting files
 
 const genBanner = () => {
     const projectStr = `
-                                                                    
-    _|_|_|                        _|                        _|      
-    _|    _|  _|  _|_|    _|_|          _|_|      _|_|_|  _|_|_|_|  
-    _|_|_|    _|_|      _|    _|  _|  _|_|_|_|  _|          _|      
-    _|        _|        _|    _|  _|  _|        _|          _|      
-    _|        _|          _|_|    _|    _|_|_|    _|_|_|      _|_|  
-                                  _|                                
+
+    _|_|_|                        _|                        _|
+    _|    _|  _|  _|_|    _|_|          _|_|      _|_|_|  _|_|_|_|
+    _|_|_|    _|_|      _|    _|  _|  _|_|_|_|  _|          _|
+    _|        _|        _|    _|  _|  _|        _|          _|
+    _|        _|          _|_|    _|    _|_|_|    _|_|_|      _|_|
+                                  _|
                                 _|                                  `;
     const mendTaylorStr = `
-                                                                                                        
-    _|      _|                            _|      _|_|_|_|_|                    _|                      
-    _|_|  _|_|    _|_|    _|_|_|      _|_|_|          _|      _|_|_|  _|    _|  _|    _|_|    _|  _|_|  
-    _|  _|  _|  _|_|_|_|  _|    _|  _|    _|          _|    _|    _|  _|    _|  _|  _|    _|  _|_|      
-    _|      _|  _|        _|    _|  _|    _|          _|    _|    _|  _|    _|  _|  _|    _|  _|        
-    _|      _|    _|_|_|  _|    _|    _|_|_|          _|      _|_|_|    _|_|_|  _|    _|_|    _|        
-                                                                            _|                          
+
+    _|      _|                            _|      _|_|_|_|_|                    _|
+    _|_|  _|_|    _|_|    _|_|_|      _|_|_|          _|      _|_|_|  _|    _|  _|    _|_|    _|  _|_|
+    _|  _|  _|  _|_|_|_|  _|    _|  _|    _|          _|    _|    _|  _|    _|  _|  _|    _|  _|_|
+    _|      _|  _|        _|    _|  _|    _|          _|    _|    _|  _|    _|  _|  _|    _|  _|
+    _|      _|    _|_|_|  _|    _|    _|_|_|          _|      _|_|_|    _|_|_|  _|    _|_|    _|
+                                                                            _|
                                                                         _|_|                            `;
 
     return (
-        chalk.bgMagenta.blue(projectStr) +
+        chalk.bgCyan.blue(projectStr) +
         '\n' +
-        chalk.bgMagenta.blue(mendTaylorStr)
+        chalk.bgCyan.blue(mendTaylorStr)
     );
 };
 const processLineByLine = async () => {
@@ -127,24 +127,42 @@ const processCurLine = (curLine, hash) => {
     }
 };
 
-const copyFiles = async (hash) => {
+const copyFiles = async (hash, total) => {
     const keys = Object.keys(hash);
+
+    let curItemCount = 0;
     let curHash = null;
     let srcFile = null;
     let dstFile = null;
     let newFilename = null;
 
-    log('\n' + chalk.cyan('Copying files ') + chalk.blue('...') + '\n');
-    term.up(1);
+    log('\n' + chalk.cyan('Copying files ') + chalk.blue('...') + '\n\n\n');
 
     const { x, y } = await term.getCursorLocation();
+
+    const progressBar = term.progressBar({
+        width: Math.min(75, term.width - 5),
+        title: 'Mending progress:',
+        eta: false,
+        percent: true,
+        percentStyle: term.cyan,
+        barStyle: term.magenta,
+        x: 0,
+        y: y - 3
+    });
+
     for (curKey of keys) {
-        term.moveTo(1, y - 1);
+        term.moveTo(1, y - 2);
         term.eraseDisplayBelow();
-        term(chalk.cyan('Handling extension') + ': ' + chalk.blue(curKey));
+        term(chalk.cyan('Current extension') + ': ' + chalk.blue(curKey));
         curHash = hash[curKey];
 
-        curHash.forEach((file) => {
+        for (file of curHash) {
+            curItemCount += 1;
+
+            progress = curItemCount / total;
+            progressBar.update(curItemCount / total);
+
             newFilename = file.fileName.replace(DATA_EXT, `.${file.extension}`);
             srcFile = path.resolve(SOURCE_PATH, file.fileName);
             dstFile = path.resolve(DEST_PATH, file.path, newFilename);
@@ -152,7 +170,7 @@ const copyFiles = async (hash) => {
 
             term.moveTo.cyan(
                 1,
-                y,
+                y - 1,
                 chalk.whiteBright('Copying ') +
                     chalk.cyanBright(srcFile) +
                     ' ' +
@@ -161,8 +179,8 @@ const copyFiles = async (hash) => {
                     chalk.cyanBright(dstFile)
             );
 
-            fs.copyFileSync(srcFile, dstFile);
-        });
+            await fs.copyFile(srcFile, dstFile);
+        };
     }
 };
 
@@ -177,7 +195,7 @@ const init = async () => {
 
         log('\n' + chalk.cyan('Total files') + ': ' + chalk.blue(totalCount));
 
-        await copyFiles(files);
+        await copyFiles(files, totalCount);
 
         log(
             '\n\n' +
